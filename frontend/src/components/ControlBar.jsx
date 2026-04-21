@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Users, Plus, SlidersHorizontal } from "lucide-react";
 import { Button } from "./ui/Button";
-import { Dialog, DialogContent, DialogHeader } from "./ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 import { useAppStore } from "../store/useAppStore";
 
 function getSessionDisplayCode(sessionId) {
@@ -180,9 +180,9 @@ function ControlBar({
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Session Settings
             </p>
-            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <DialogTitle className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
               Routing and memory controls
-            </p>
+            </DialogTitle>
           </div>
         </DialogHeader>
         <DialogContent className="space-y-8 overflow-y-auto">

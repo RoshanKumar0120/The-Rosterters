@@ -7,9 +7,9 @@ function resolveOllamaModel(ollamaModel) {
   );
 }
 
-const HAS_OPENROUTER_KEY = Boolean(
-  process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY1
-);
+function hasOpenRouterKey() {
+  return Boolean(process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY1);
+}
 
 const AGENT_MODEL_MAP = {
   "1": { provider: "gemini", model: process.env.GEMINI_MODEL || "gemini-1.5-flash" },
@@ -23,7 +23,7 @@ const AGENT_MODEL_MAP = {
 };
 
 function getPreferredApiConfig(ollamaModel) {
-  if (HAS_OPENROUTER_KEY) {
+  if (hasOpenRouterKey()) {
     return {
       provider: "openrouter",
       model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001",
@@ -57,7 +57,7 @@ function resolveAgentModelConfig(agentId, apiRoutingMode = "persona", ollamaMode
       model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001",
     };
   }
-  if (HAS_OPENROUTER_KEY) {
+  if (hasOpenRouterKey()) {
     return {
       provider: "openrouter",
       model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogFooter } from "./ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "./ui/Dialog";
 import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
 import { useAppStore } from "../store/useAppStore";
@@ -180,9 +180,9 @@ function PersonaEditor({ isOpen, onClose, onCreated }) {
   };
 
   return (
-    <Dialog isOpen={isOpen} onClose={closeAndReset} size="lg">
+      <Dialog isOpen={isOpen} onClose={closeAndReset} size="lg">
       <DialogHeader>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create New Agent</h2>
+        <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Create New Agent</DialogTitle>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Use AI suggestions from a topic, or find a character by name.
         </p>

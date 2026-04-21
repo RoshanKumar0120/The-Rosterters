@@ -7,27 +7,67 @@
 import axios from "axios";
 import { resolveOllamaModel } from "./agentModelRegistry.js";
 
-const OLLAMA_BASE_URL =
-  process.env.OLLAMA_BASE_URL ||
-  "http://localhost:11434";
-const OLLAMA_ORCHESTRATOR_MODEL = resolveOllamaModel();
-const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS || 60000);
-const ORCHESTRATOR_TIMEOUT_MS = Number(process.env.ORCHESTRATOR_TIMEOUT_MS || 15000);
-const OPENROUTER_API_KEYS = [
-  process.env.OPENROUTER_API_KEY,
-  process.env.OPENROUTER_API_KEY1,
-].filter(Boolean);
-const HAS_OPENROUTER_KEY = OPENROUTER_API_KEYS.length > 0;
-const ORCHESTRATOR_PROVIDER =
-  process.env.ORCHESTRATOR_PROVIDER ||
-  (HAS_OPENROUTER_KEY ? "openrouter" : "");
-const ORCHESTRATOR_MODEL = process.env.ORCHESTRATOR_MODEL || "";
+function getOllamaBaseUrl() {
+  return process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+}
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-latest";
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
-const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 90000);
+function getOllamaOrchestratorModel() {
+  return resolveOllamaModel();
+}
+
+function getOllamaTimeoutMs() {
+  return Number(process.env.OLLAMA_TIMEOUT_MS || 60000);
+}
+
+function getOrchestratorTimeoutMs() {
+  return Number(process.env.ORCHESTRATOR_TIMEOUT_MS || 15000);
+}
+
+function getOpenRouterApiKeys() {
+  const candidates = [
+    ["OPENROUTER_API_KEY", process.env.OPENROUTER_API_KEY],
+    ["OPENROUTER_API_KEY1", process.env.OPENROUTER_API_KEY1],
+  ];
+
+  return candidates
+    .map(([label, value]) => ({
+      label,
+      value: String(value || "").trim(),
+    }))
+    .filter((entry) => Boolean(entry.value));
+}
+
+function hasOpenRouterKey() {
+  return getOpenRouterApiKeys().length > 0;
+}
+
+function getOrchestratorProvider() {
+  return process.env.ORCHESTRATOR_PROVIDER || (hasOpenRouterKey() ? "openrouter" : "");
+}
+
+function getOrchestratorModel() {
+  return process.env.ORCHESTRATOR_MODEL || "";
+}
+
+function getGeminiModel() {
+  return process.env.GEMINI_MODEL || "gemini-1.5-flash";
+}
+
+function getClaudeModel() {
+  return process.env.CLAUDE_MODEL || "claude-3-5-sonnet-latest";
+}
+
+function getDeepSeekModel() {
+  return process.env.DEEPSEEK_MODEL || "deepseek-chat";
+}
+
+function getOpenRouterModel() {
+  return process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
+}
+
+function getLlmTimeoutMs() {
+  return Number(process.env.LLM_TIMEOUT_MS || 90000);
+}
 
 function getProviderPriority(preferredProvider) {
   const providers = [];
@@ -37,7 +77,7 @@ function getProviderPriority(preferredProvider) {
   };
 
   pushProvider(preferredProvider, Boolean(preferredProvider));
-  pushProvider("openrouter", HAS_OPENROUTER_KEY);
+  pushProvider("openrouter", hasOpenRouterKey());
   pushProvider("gemini", Boolean(process.env.GEMINI_API_KEY));
   pushProvider("claude", Boolean(process.env.CLAUDE_API_KEY));
   pushProvider("deepseek", Boolean(process.env.DEEPSEEK_API_KEY || process.env.DEEPSEARCH_API_KEY));
@@ -51,15 +91,27 @@ function getStrictProviderList(provider) {
   return normalizedProvider ? [normalizedProvider] : [];
 }
 
+function formatProviderError(error) {
+  const status = error?.response?.status;
+  const details =
+    error?.response?.data?.error?.message ||
+    error?.response?.data?.message ||
+    error?.message ||
+    (error?.code ? `Request failed with code ${error.code}` : "") ||
+    "Unknown provider error";
+
+  return status ? `${details} (status ${status})` : details;
+}
+
 async function callOllama({
   system,
   prompt,
-  model = OLLAMA_ORCHESTRATOR_MODEL,
+  model = getOllamaOrchestratorModel(),
   temperature = 0.4,
-  timeoutMs = OLLAMA_TIMEOUT_MS,
+  timeoutMs = getOllamaTimeoutMs(),
 }) {
   const response = await axios.post(
-    `${OLLAMA_BASE_URL.replace(/\/$/, "")}/api/generate`,
+    `${getOllamaBaseUrl().replace(/\/$/, "")}/api/generate`,
     {
       model,
       system,
@@ -72,7 +124,7 @@ async function callOllama({
   return (response.data?.response || "").trim();
 }
 
-async function callGemini({ system, prompt, model = GEMINI_MODEL, temperature = 0.4 }) {
+async function callGemini({ system, prompt, model = getGeminiModel(), temperature = 0.4 }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Missing GEMINI_API_KEY.");
 
@@ -83,14 +135,14 @@ async function callGemini({ system, prompt, model = GEMINI_MODEL, temperature = 
       contents: [{ role: "user", parts: [{ text: `${system}\n\n${prompt}` }] }],
       generationConfig: { temperature },
     },
-    { timeout: LLM_TIMEOUT_MS }
+    { timeout: getLlmTimeoutMs() }
   );
   return (
     response.data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("\n").trim() || ""
   );
 }
 
-async function callClaude({ system, prompt, model = CLAUDE_MODEL, temperature = 0.4 }) {
+async function callClaude({ system, prompt, model = getClaudeModel(), temperature = 0.4 }) {
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) throw new Error("Missing CLAUDE_API_KEY.");
 
@@ -104,7 +156,7 @@ async function callClaude({ system, prompt, model = CLAUDE_MODEL, temperature = 
       messages: [{ role: "user", content: prompt }],
     },
     {
-      timeout: LLM_TIMEOUT_MS,
+      timeout: getLlmTimeoutMs(),
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
@@ -122,7 +174,7 @@ async function callClaude({ system, prompt, model = CLAUDE_MODEL, temperature = 
   );
 }
 
-async function callDeepSeek({ system, prompt, model = DEEPSEEK_MODEL, temperature = 0.4 }) {
+async function callDeepSeek({ system, prompt, model = getDeepSeekModel(), temperature = 0.4 }) {
   const apiKey = process.env.DEEPSEEK_API_KEY || process.env.DEEPSEARCH_API_KEY;
   if (!apiKey) throw new Error("Missing DEEPSEEK_API_KEY/DEEPSEARCH_API_KEY.");
 
@@ -137,7 +189,7 @@ async function callDeepSeek({ system, prompt, model = DEEPSEEK_MODEL, temperatur
       ],
     },
     {
-      timeout: LLM_TIMEOUT_MS,
+      timeout: getLlmTimeoutMs(),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
@@ -148,16 +200,17 @@ async function callDeepSeek({ system, prompt, model = DEEPSEEK_MODEL, temperatur
   return response.data?.choices?.[0]?.message?.content?.trim() || "";
 }
 
-async function callOpenRouter({ system, prompt, model = OPENROUTER_MODEL, temperature = 0.4 }) {
-  if (!OPENROUTER_API_KEYS.length) {
+async function callOpenRouter({ system, prompt, model = getOpenRouterModel(), temperature = 0.4 }) {
+  const openRouterApiKeys = getOpenRouterApiKeys();
+
+  if (!openRouterApiKeys.length) {
     throw new Error("Missing OPENROUTER_API_KEY or OPENROUTER_API_KEY1.");
   }
 
   let lastError;
 
-  for (let index = 0; index < OPENROUTER_API_KEYS.length; index += 1) {
-    const apiKey = OPENROUTER_API_KEYS[index];
-    const keyLabel = index === 0 ? "OPENROUTER_API_KEY" : `OPENROUTER_API_KEY${index}`;
+  for (let index = 0; index < openRouterApiKeys.length; index += 1) {
+    const { label: keyLabel, value: apiKey } = openRouterApiKeys[index];
 
     try {
       const response = await axios.post(
@@ -171,7 +224,7 @@ async function callOpenRouter({ system, prompt, model = OPENROUTER_MODEL, temper
           ],
         },
         {
-          timeout: LLM_TIMEOUT_MS,
+          timeout: getLlmTimeoutMs(),
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "content-type": "application/json",
@@ -197,9 +250,11 @@ async function callOpenRouter({ system, prompt, model = OPENROUTER_MODEL, temper
         `[OpenRouter] Request failed with ${keyLabel}${status ? ` (status ${status})` : ""}: ${details}`
       );
 
-      if (index < OPENROUTER_API_KEYS.length - 1) {
-        const nextKeyLabel = `OPENROUTER_API_KEY${index + 1}`;
+      if (index < openRouterApiKeys.length - 1) {
+        const nextKeyLabel = openRouterApiKeys[index + 1].label;
         console.warn(`[OpenRouter] Retrying with fallback key ${nextKeyLabel}.`);
+      } else if (openRouterApiKeys.length === 1) {
+        console.warn("[OpenRouter] No fallback key configured after primary key failure.");
       }
     }
   }
@@ -208,8 +263,11 @@ async function callOpenRouter({ system, prompt, model = OPENROUTER_MODEL, temper
 }
 
 async function callAgentLLM({ provider, model, system, prompt, temperature = 0.4 }) {
-  const providerCandidates = getProviderPriority(provider);
-  const requestedModel = model || process.env.OPENROUTER_MODEL || OPENROUTER_MODEL;
+  const strictProviderCandidates = getStrictProviderList(provider);
+  const providerCandidates = strictProviderCandidates.length
+    ? strictProviderCandidates
+    : getProviderPriority(provider);
+  const requestedModel = model || process.env.OPENROUTER_MODEL || getOpenRouterModel();
 
   for (const providerCandidate of providerCandidates) {
     try {
@@ -218,28 +276,28 @@ async function callAgentLLM({ provider, model, system, prompt, temperature = 0.4
           return await callGemini({
             system,
             prompt,
-            model: provider === "gemini" ? requestedModel : GEMINI_MODEL,
+            model: provider === "gemini" ? requestedModel : getGeminiModel(),
             temperature,
           });
         case "claude":
           return await callClaude({
             system,
             prompt,
-            model: provider === "claude" ? requestedModel : CLAUDE_MODEL,
+            model: provider === "claude" ? requestedModel : getClaudeModel(),
             temperature,
           });
         case "deepseek":
           return await callDeepSeek({
             system,
             prompt,
-            model: provider === "deepseek" ? requestedModel : DEEPSEEK_MODEL,
+            model: provider === "deepseek" ? requestedModel : getDeepSeekModel(),
             temperature,
           });
         case "openrouter":
           return await callOpenRouter({
             system,
             prompt,
-            model: provider === "openrouter" ? requestedModel : OPENROUTER_MODEL,
+            model: provider === "openrouter" ? requestedModel : getOpenRouterModel(),
             temperature,
           });
         case "ollama":
@@ -250,7 +308,7 @@ async function callAgentLLM({ provider, model, system, prompt, temperature = 0.4
             model:
               provider === "ollama"
                 ? requestedModel
-                : process.env.OLLAMA_MODEL || process.env.OLLAMA_MODEL || OLLAMA_ORCHESTRATOR_MODEL,
+                : process.env.OLLAMA_MODEL || process.env.OLLAMA_MODEL || getOllamaOrchestratorModel(),
             temperature,
           });
       }
@@ -258,8 +316,12 @@ async function callAgentLLM({ provider, model, system, prompt, temperature = 0.4
       console.error("Agent LLM call failed:", {
         provider: providerCandidate,
         model: providerCandidate === provider ? requestedModel : undefined,
-        message: error?.message,
+        message: formatProviderError(error),
       });
+
+      if (strictProviderCandidates.length) {
+        break;
+      }
     }
   }
 
@@ -270,7 +332,7 @@ async function callOrchestratorLLM({ system, prompt, temperature = 0.4, ollamaMo
   const strictProviderCandidates = getStrictProviderList(process.env.ORCHESTRATOR_PROVIDER);
   const providerCandidates = strictProviderCandidates.length
     ? strictProviderCandidates
-    : getProviderPriority(ORCHESTRATOR_PROVIDER || "openrouter");
+    : getProviderPriority(getOrchestratorProvider() || "openrouter");
   for (const provider of providerCandidates) {
     try {
       switch (provider) {
@@ -278,28 +340,28 @@ async function callOrchestratorLLM({ system, prompt, temperature = 0.4, ollamaMo
           return await callGemini({
             system,
             prompt,
-            model: ORCHESTRATOR_MODEL || GEMINI_MODEL,
+            model: getOrchestratorModel() || getGeminiModel(),
             temperature,
           });
         case "claude":
           return await callClaude({
             system,
             prompt,
-            model: ORCHESTRATOR_MODEL || CLAUDE_MODEL,
+            model: getOrchestratorModel() || getClaudeModel(),
             temperature,
           });
         case "deepseek":
           return await callDeepSeek({
             system,
             prompt,
-            model: ORCHESTRATOR_MODEL || DEEPSEEK_MODEL,
+            model: getOrchestratorModel() || getDeepSeekModel(),
             temperature,
           });
         case "openrouter":
           return await callOpenRouter({
             system,
             prompt,
-            model: ORCHESTRATOR_MODEL || OPENROUTER_MODEL,
+            model: getOrchestratorModel() || getOpenRouterModel(),
             temperature,
           });
         case "ollama":
@@ -307,13 +369,13 @@ async function callOrchestratorLLM({ system, prompt, temperature = 0.4, ollamaMo
           return await callOllama({
             system,
             prompt,
-            model: ORCHESTRATOR_MODEL || resolveOllamaModel(ollamaModel) || OLLAMA_ORCHESTRATOR_MODEL,
+            model: getOrchestratorModel() || resolveOllamaModel(ollamaModel) || getOllamaOrchestratorModel(),
             temperature,
-            timeoutMs: ORCHESTRATOR_TIMEOUT_MS,
+            timeoutMs: getOrchestratorTimeoutMs(),
           });
       }
     } catch (error) {
-      console.error('Orchestrator LLM call failed:', { provider, message: error?.message });
+      console.error("Orchestrator LLM call failed:", { provider, message: formatProviderError(error) });
       if (strictProviderCandidates.length) {
         throw new Error(`Orchestrator provider "${provider}" failed: ${error?.message}`);
       }
@@ -331,5 +393,5 @@ export {
   callClaude,
   callDeepSeek,
   callOpenRouter,
-  OLLAMA_ORCHESTRATOR_MODEL,
+  getOllamaOrchestratorModel as OLLAMA_ORCHESTRATOR_MODEL,
 };

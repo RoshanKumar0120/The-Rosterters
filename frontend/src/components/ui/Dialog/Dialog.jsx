@@ -96,10 +96,17 @@ const DialogHeader = ({
   children,
   className = ""
 }) => <div className={`p-6 border-b border-gray-200 dark:border-slate-700 ${className}`}>
-    <DialogPrimitive.Title className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-      {children}
-    </DialogPrimitive.Title>
+    {children}
   </div>;
+// DialogTitle renders the accessible modal title element.
+const DialogTitle = ({
+  children,
+  className = ""
+}) => (
+  <DialogPrimitive.Title className={`text-lg font-semibold text-slate-900 dark:text-slate-100 ${className}`}>
+    {children}
+  </DialogPrimitive.Title>
+);
 // DialogContent provides the modal body container.
 const DialogContent = ({
   children,
@@ -119,5 +126,6 @@ export {
   Dialog,
   DialogContent,
   DialogFooter,
-  DialogHeader
+  DialogHeader,
+  DialogTitle
 };

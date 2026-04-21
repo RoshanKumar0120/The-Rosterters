@@ -3,7 +3,7 @@ import { Check, ChevronLeft, Pencil, Search, Trash2 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { AgentCard } from "./AgentCard";
-import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./ui/Dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/Dialog";
 import { useAppStore } from "../store/useAppStore";
 
 // MemberSelect filters and selects council members during setup.
@@ -570,7 +570,9 @@ function MemberSelect({
         </div>
       </div>
       <Dialog isOpen={!!editingAgent} onClose={closeEditor} size="md">
-        <DialogHeader>Edit Persona Fields</DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Edit Persona Fields</DialogTitle>
+        </DialogHeader>
         <DialogContent className="space-y-4">
           <div>
             <p className="text-sm font-semibold text-slate-900 dark:text-white">{editingAgent?.name}</p>
