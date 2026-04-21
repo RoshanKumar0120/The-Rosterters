@@ -1,7 +1,7 @@
 // Medical Consulting Specialists - Complete medical panel for diagnosis and treatment consultation
 const MEDICAL_AGENTS = [
   {
-    id: "dr_devi_prasad_shetty",
+    id: "dps-001",
     name: "Devi Prasad Shetty",
     role: "Cardiac Surgeon",
     era: "Contemporary",
@@ -16,7 +16,7 @@ const MEDICAL_AGENTS = [
     tags: ["cardiology", "surgery", "cardiac"]
   },
   {
-    id: "dr_paul_broca",
+    id: "pb-002",
     name: "Paul Broca",
     role: "Neurologist",
     era: "Historical (19th Century)",
@@ -31,7 +31,7 @@ const MEDICAL_AGENTS = [
     tags: ["neurology", "speech", "brain"]
   },
   {
-    id: "dr_ben_carson",
+    id: "bc-003",
     name: "Ben Carson",
     role: "Neurosurgeon",
     era: "Contemporary",
@@ -46,7 +46,7 @@ const MEDICAL_AGENTS = [
     tags: ["neurosurgery", "pediatric", "oncology"]
   },
   {
-    id: "dr_siddhartha_mukherjee",
+    id: "sm-004",
     name: "Siddhartha Mukherjee",
     role: "Oncologist & Author",
     era: "Contemporary",
@@ -61,7 +61,7 @@ const MEDICAL_AGENTS = [
     tags: ["oncology", "leukemia", "immunotherapy"]
   },
   {
-    id: "dr_christiaan_barnard",
+    id: "cb-005",
     name: "Christiaan Barnard",
     role: "Cardiac Surgeon",
     era: "Modern Pioneer",
@@ -76,7 +76,7 @@ const MEDICAL_AGENTS = [
     tags: ["cardiology", "transplant", "surgery"]
   },
   {
-    id: "dr_henry_marsh",
+    id: "hm-006",
     name: "Henry Marsh",
     role: "Neurosurgeon",
     era: "Contemporary",
@@ -91,7 +91,7 @@ const MEDICAL_AGENTS = [
     tags: ["neurosurgery", "oncology", "brain-tumors"]
   },
   {
-    id: "dr_jane_cooke_wright",
+    id: "jcw-007",
     name: "Jane Cooke Wright",
     role: "Oncologist",
     era: "Modern Pioneer",
@@ -106,7 +106,7 @@ const MEDICAL_AGENTS = [
     tags: ["oncology", "chemotherapy", "clinical-trials"]
   },
   {
-    id: "dr_govind_mital",
+    id: "gm-008",
     name: "Govind Mital",
     role: "Gastroenterologist",
     era: "Contemporary",
@@ -121,7 +121,7 @@ const MEDICAL_AGENTS = [
     tags: ["gastroenterology", "hepatology", "endoscopy"]
   },
   {
-    id: "dr_oliver_sacks",
+    id: "os-009",
     name: "Oliver Sacks",
     role: "Neurologist",
     era: "Contemporary",
@@ -136,7 +136,7 @@ const MEDICAL_AGENTS = [
     tags: ["neurology", "neurodiversity", "empathy"]
   },
   {
-    id: "dr_denis_mukwege",
+    id: "dm-010",
     name: "Denis Mukwege",
     role: "Gynecologist",
     era: "Contemporary",
