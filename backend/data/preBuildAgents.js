@@ -215,29 +215,4 @@ export const medical_specialists = [
   }
 ];
 
-// Alias for backward compatibility
-export const AGENTS = medical_specialists;
-
-// Mock messages for medical consulting sessions
-export const MENTOR_MOCK_MESSAGES = [
-  {
-    id: "m1",
-    speakerId: "dps-001",
-    speakerName: "Devi Prasad Shetty",
-    speakerInitials: "DPS",
-    isUser: false,
-    text: "In cardiac medicine, every decision affects life itself. We must approach this case with precision and compassion. Let us examine the clinical evidence and patient circumstances carefully.",
-    timestamp: Date.now() - 6e4
-  },
-  {
-    id: "m2",
-    speakerId: "pb-002",
-    speakerName: "Paul Broca",
-    speakerInitials: "PB",
-    isUser: false,
-    text: "Observe carefully, map precisely — the brain reveals its secrets to those who study it methodically. The neurological findings must be correlated with imaging and clinical presentation.",
-    timestamp: Date.now() - 3e4
-  }
-];
-
 export default medical_specialists;

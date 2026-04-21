@@ -21,8 +21,17 @@ async function seedDatabase() {
   const mergedAgents = [...AGENTS, ...prebuiltAgents].reduce((acc, agent) => { acc.set(agent.id, agent); return acc; }, new Map());
   const enrichedAgents = Array.from(mergedAgents.values()).map((agent) => ({ ...agent, description: enrichDescription(agent) }));
 
-  await Promise.all(enrichedAgents.map((agent) => Agent.updateOne({ id: agent.id }, { $set: agent }, { upsert: true })));
-  await Promise.all(MENTOR_MOCK_MESSAGES.map((message) => Message.updateOne({ id: message.id }, { $set: message }, { upsert: true })));
+  console.log(`[Seed] Starting database seed with ${enrichedAgents.length} agents...`);
+  
+  try {
+    const agentResults = await Promise.all(enrichedAgents.map((agent) => Agent.updateOne({ id: agent.id }, { $set: agent }, { upsert: true })));
+    const messageResults = await Promise.all(MENTOR_MOCK_MESSAGES.map((message) => Message.updateOne({ id: message.id }, { $set: message }, { upsert: true })));
+    
+    console.log(`[Seed] ✓ Database seeding complete. Agents: ${enrichedAgents.length}, Messages: ${MENTOR_MOCK_MESSAGES.length}`);
+  } catch (error) {
+    console.error(`[Seed] ✗ Seeding failed:`, error.message);
+    throw error;
+  }
 }
 
 export { seedDatabase };
