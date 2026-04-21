@@ -1,7 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import axios from "axios";
+
+
 
 const server = new McpServer({
   name: "council-tools",
@@ -318,4 +322,6 @@ server.tool(
 // ─────────────────────────────────────────────
 const transport = new StdioServerTransport();
 await server.connect(transport);
+
+console.log("MCP started 🚀");
 console.error("Council MCP server running — tools: wiki_search, medical_search, drug_info, find_hospital, news_search");
