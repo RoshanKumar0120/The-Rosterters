@@ -17,36 +17,36 @@ import { DEBATE_TEMPERATURES } from "../data/mockData";
 import {useAppStore } from '../store/useAppStore'
 // Sidebar surfaces mode navigation, active session context, and user actions.
 const NAV_ITEMS = [
-  {
-    id: "combat",
-    label: "Council Combat",
-    icon: Swords,
-    isMode: true
-  },
-  {
-    id: "mentor",
-    label: "Mentor Dashboard",
-    icon: GraduationCap,
-    isMode: true
-  },
-  {
-    id: "historical",
-    label: "Time-Capsule",
-    icon: Clock,
-    isMode: true
-  },
-  {
-    id: "analytics",
-    label: "Live Analytics",
-    icon: BarChart3,
-    isMode: false
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-    isMode: false
-  }
+  // {
+  //   id: "combat",
+  //   label: "Council Combat",
+  //   icon: Swords,
+  //   isMode: true
+  // },
+  // {
+  //   id: "mentor",
+  //   label: "Mentor Dashboard",
+  //   icon: GraduationCap,
+  //   isMode: true
+  // },
+  // {
+  //   id: "historical",
+  //   label: "Time-Capsule",
+  //   icon: Clock,
+  //   isMode: true
+  // },
+  // {
+  //   id: "analytics",
+  //   label: "Live Analytics",
+  //   icon: BarChart3,
+  //   isMode: false
+  // },
+  // {
+  //   id: "settings",
+  //   label: "Settings",
+  //   icon: Settings,
+  //   isMode: false
+  // }
 ];
 
 const FEATURE_ITEMS = [

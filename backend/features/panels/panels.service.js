@@ -1,4 +1,11 @@
-import { medical_specialists } from "../../data/preBuildAgents.js";
+/**
+ * Panels Service
+ * WHY: Implement domain-specific expert panel generation logic
+ * HOW: Keyword matching with bonus scoring against agent databases
+ * RESULT: Filtered and ranked experts tailored to specific scenarios
+ */
+
+import { interview_panel, law_makers, medical_specialists } from "../../data/preBuildAgents.js";
 import { normaliseText } from "../../shared/helpers.js";
 
 function toSearchBlob(agent) {
@@ -32,6 +39,63 @@ function ensureDiverseFallback(agents, pool, count) {
   return [...agents, ...fillers];
 }
 
+/**
+ * generateLawPanel - Filter legal experts by topic relevance
+ * WHY: Match legal practitioners to constitutional & judicial topics
+ * HOW: Keyword scoring on law_makers database
+ * RESULT: Object with experts, judges, advocates arrays
+ */
+function generateLawPanel(topic) {
+  const topicLower = normaliseText(topic);
+  const scored = law_makers.map((agent) => ({
+    ...agent,
+    score: scoreByKeywords(agent, topicLower.split(/\W+/).filter(Boolean), {
+      constitution: 5, constitutional: 5, rights: 4, liberty: 3, judicial: 3,
+      court: 3, emergency: 4, federal: 3, parliament: 3, tax: 3, economics: 2,
+      property: 2, labour: 2, family: 2, criminal: 2, public: 2,
+    }),
+  }));
+  const ranked = sortByScore(scored);
+  const experts = ensureDiverseFallback(ranked.filter((a) => a.score > 0).map(trimScore), ranked.map(trimScore), 5);
+  const judges = experts.filter((a) => /justice|judge|chief justice/i.test(a.role));
+  const advocates = experts.filter((a) => !judges.some((j) => j.id === a.id));
+  return { experts, judges, advocates };
+}
+
+/**
+ * generateInterviewPanel - Filter interviewers by scenario type
+ * WHY: Match interview coaches to specific interview scenarios
+ * HOW: Scenario mapping + keyword scoring on interview_panel database
+ * RESULT: Object with interviewers array
+ */
+function generateInterviewPanel(scenario) {
+  const scenarioLower = normaliseText(scenario);
+  const scenarioMap = {
+    "tech-dsa": ["dsa", "algorithm", "coding", "data structure", "technical interview"],
+    "system-design": ["system design", "distributed systems", "architecture", "scalability", "api"],
+    behavioral: ["leadership", "behavioural interview", "conflict", "communication", "culture fit"],
+    "startup-pitch": ["startup", "pitch", "management", "communication", "business"],
+    "case-study": ["analysis", "problem solving", "system design", "strategy", "trade-offs"],
+    "management-gd": ["management", "leadership", "team dynamics", "strategy", "culture fit"],
+  };
+  const keywords = scenarioMap[scenarioLower] || scenarioLower.split(/\W+/).filter(Boolean);
+  const scored = interview_panel.map((agent) => ({
+    ...agent,
+    score: scoreByKeywords(agent, keywords, {
+      technical: 3, hr: 3, behavioural: 3, startup: 3, management: 3,
+      ml: scenarioLower.includes("ml") || scenarioLower.includes("ai") ? 4 : 0,
+    }),
+  }));
+  const interviewers = ensureDiverseFallback(sortByScore(scored).filter((a) => a.score > 0).map(trimScore), sortByScore(scored).map(trimScore), 5);
+  return { interviewers };
+}
+
+/**
+ * generateMedicalPanel - Filter medical specialists by case relevance
+ * WHY: Match doctors to patient medical case descriptions
+ * HOW: Specialty keyword scoring on medical_specialists database
+ * RESULT: Object with doctors and specialists arrays
+ */
 function generateMedicalPanel(medicalCase) {
   const caseLower = normaliseText(medicalCase);
   const keywords = caseLower.split(/\W+/).filter(Boolean);
@@ -47,4 +111,4 @@ function generateMedicalPanel(medicalCase) {
   return { doctors, specialists };
 }
 
-export { generateMedicalPanel };
+export { generateLawPanel, generateInterviewPanel, generateMedicalPanel };

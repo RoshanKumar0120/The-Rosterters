@@ -10,6 +10,7 @@ import messageRoutes from "./features/message/message.routes.js";
 import orchestratorRoutes from "./features/orchestrator/orchestrator.routes.js";
 import combatRoutes from "./features/combat/combat.routes.js";
 import featuresRoutes from "./features/panels/panels.routes.js";
+import Agent from "./features/agent/agent.model.js";
 
 // Express app configuration + environment defaults.
 const app = express();
