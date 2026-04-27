@@ -72,6 +72,96 @@ function deriveMembersFromMessages(messages = [], agents = []) {
   return members;
 }
 
+function normalizeHistoryMode(mode = "") {
+  const value = String(mode || "").trim().toLowerCase();
+  if (["combat", "medical-consulting", "learn-law", "interview-simulator"].includes(value)) {
+    return value;
+  }
+  if (value === "mentor") return "medical-consulting";
+  if (value === "interview") return "interview-simulator";
+  if (value === "law" || value === "legal") return "learn-law";
+  return "";
+}
+
+function inferHistoryModeFromMembers(members = [], agents = []) {
+  const agentMap = new Map((agents || []).map((agent) => [String(agent.id), agent]));
+  const sourceHints = members
+    .map((member) => agentMap.get(String(member?.id || "")) || member)
+    .flatMap((member) => [
+      String(member?.sourceTopic || "").toLowerCase(),
+      String(member?.domain || "").toLowerCase(),
+      String(member?.role || "").toLowerCase(),
+      ...(Array.isArray(member?.tags) ? member.tags.map((tag) => String(tag || "").toLowerCase()) : []),
+    ])
+    .filter(Boolean)
+    .join(" ");
+
+  if (
+    sourceHints.includes("medical") ||
+    sourceHints.includes("doctor") ||
+    sourceHints.includes("clinical") ||
+    sourceHints.includes("specialist")
+  ) {
+    return "medical-consulting";
+  }
+
+  if (
+    sourceHints.includes("interview") ||
+    sourceHints.includes("recruit") ||
+    sourceHints.includes("hr") ||
+    sourceHints.includes("hiring")
+  ) {
+    return "interview-simulator";
+  }
+
+  if (
+    sourceHints.includes("law") ||
+    sourceHints.includes("legal") ||
+    sourceHints.includes("constitution") ||
+    sourceHints.includes("judge")
+  ) {
+    return "learn-law";
+  }
+
+  return "combat";
+}
+
+function resolveHistoryMode(entry, agents = []) {
+  const explicitMode = normalizeHistoryMode(entry?.report?.mode || entry?.mode);
+  if (explicitMode) return explicitMode;
+  const members = deriveMembersFromMessages(entry?.messages || [], agents);
+  return inferHistoryModeFromMembers(members, agents);
+}
+
+function deriveCombatLogFromMessages(messages = []) {
+  let round = 1;
+  let sawUserTurnInRound = false;
+
+  return (messages || [])
+    .filter((entry) => entry && entry.speakerId !== "orchestrator" && String(entry.text || "").trim())
+    .map((entry) => {
+      const normalized = {
+        id: entry.id,
+        speakerId: entry.speakerId,
+        speakerName: entry.speakerName,
+        speakerInitials: entry.speakerInitials,
+        isUser: Boolean(entry.isUser),
+        text: String(entry.text || "").trim(),
+        timestamp: entry.timestamp,
+        round,
+      };
+
+      if (entry.isUser) {
+        sawUserTurnInRound = true;
+      } else if (sawUserTurnInRound) {
+        sawUserTurnInRound = false;
+        round += 1;
+      }
+
+      return normalized;
+    });
+}
+
 const useAppStore = create(
   persist(
     (set, get) => ({
@@ -342,12 +432,25 @@ const useAppStore = create(
           });
 
           const discussionHistory = Array.from(grouped.values())
-            .map((entry) => ({
-              ...entry,
-              messages: entry.messages.sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0)),
-              report: reportMap.get(`${entry.sessionId}::${entry.topic}`)?.verdict || null,
-              mode: reportMap.get(`${entry.sessionId}::${entry.topic}`)?.mode || "mentor",
-            }))
+            .map((entry) => {
+              const sortedMessages = entry.messages.sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+              const reportRecord = reportMap.get(`${entry.sessionId}::${entry.topic}`) || null;
+              const hydratedEntry = {
+                ...entry,
+                messages: sortedMessages,
+                report: reportRecord?.verdict || null,
+              };
+              return {
+                ...hydratedEntry,
+                mode: resolveHistoryMode(
+                  {
+                    ...hydratedEntry,
+                    mode: reportRecord?.mode || "",
+                  },
+                  get().agents
+                ),
+              };
+            })
             .sort((a, b) => b.lastTimestamp - a.lastTimestamp);
 
           set({ discussionHistory });
@@ -359,21 +462,38 @@ const useAppStore = create(
       },
 
       openHistoryDiscussion: (entry) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            mode: entry.report?.mode || entry.mode || "mentor",
-            setupPhase: "ready",
-            phase: "draft",
-            topic: entry.topic,
-            sessionId: entry.sessionId,
-            playerTeam: deriveMembersFromMessages(entry.messages || [], state.agents),
-            finalVerdict: entry.report || null,
-          },
-          messages: entry.messages || [],
-          followupQuestion: "",
-          suggestion: "",
-        })),
+        set((state) => {
+          const restoredMessages = entry.messages || [];
+          const mode = resolveHistoryMode(entry, state.agents);
+          const members = deriveMembersFromMessages(restoredMessages, state.agents);
+          const restoredCombatLog = deriveCombatLogFromMessages(restoredMessages);
+
+          return {
+            gameState: {
+              ...state.gameState,
+              mode,
+              setupPhase: "ready",
+              phase: mode === "combat" && restoredCombatLog.length ? "combat" : "draft",
+              currentRound: 1,
+              activeTurn: "player",
+              roundStarter: "player",
+              roundStep: 0,
+              topic: entry.topic,
+              sessionId: entry.sessionId,
+              playerTeam: members,
+              opponentTeam: [],
+              combatLog: mode === "combat" ? restoredCombatLog : [],
+              roundResults: [],
+              lastVerdict: null,
+              playerScore: Number(entry.report?.finalScore?.player || 0),
+              opponentScore: Number(entry.report?.finalScore?.opponent || 0),
+              finalVerdict: entry.report || null,
+            },
+            messages: restoredMessages,
+            followupQuestion: "",
+            suggestion: "",
+          };
+        }),
 
       sendMentorMessage: async (text) => {
         const token = get().token;
